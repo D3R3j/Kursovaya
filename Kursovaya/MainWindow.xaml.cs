@@ -37,18 +37,18 @@ namespace Kursovaya
                 {
                     connection.Open();
                     string query = @"
-                        SELECT 
-                            p.ID AS ID,
-                            p.Name AS Name,
-                            c.Name AS CategoryName,
-                            p.Quantity,
-                            p.Price,
-                            p.ExpiryDate,
-                            i.Status
-                        FROM Products p
-                        LEFT JOIN Inventory i ON p.ID = i.ResponsibleID 
-                        LEFT JOIN Categories c ON p.CategoryID = c.ID;
-                    ";
+            SELECT 
+                p.ID AS ProductID,
+                p.Name AS ProductName,
+                c.Name AS CategoryName,
+                p.Quantity,
+                p.Price,
+                p.ExpiryDate,
+                COALESCE(i.Status, 'Неизвестно') AS Status
+            FROM Products p
+            LEFT JOIN Inventory i ON p.ID = i.ResponsibleID 
+            LEFT JOIN Categories c ON p.CategoryID = c.ID;
+        ";
                     SQLiteCommand command = new SQLiteCommand(query, connection);
                     SQLiteDataAdapter adapter = new SQLiteDataAdapter(command);
 

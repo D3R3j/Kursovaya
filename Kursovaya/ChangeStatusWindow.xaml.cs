@@ -27,7 +27,7 @@ namespace Kursovaya
         {
             InitializeComponent();
             productId = id;
-            StatusComboBox.ItemsSource = new List<string> { "Active", "Inactive", "Pending" };
+            StatusComboBox.ItemsSource = new List<string> { "Заказано", "На складе", "Доставляют" };
         }
 
         private void SaveStatus_Click(object sender, RoutedEventArgs e)
@@ -39,19 +39,44 @@ namespace Kursovaya
                 using (SQLiteConnection connection = new SQLiteConnection(connectionString))
                 {
                     connection.Open();
-                    string query = "UPDATE Inventory SET Status = @Status WHERE ID = @ID";
-                    SQLiteCommand command = new SQLiteCommand(query, connection);
-                    command.Parameters.AddWithValue("@Status", status);
-                    command.Parameters.AddWithValue("@ID", productId);
 
-                    command.ExecuteNonQuery();
+                    // Проверяем, существует ли запись в таблице Inventory для данного товара
+                    string checkQuery = "SELECT COUNT(*) FROM Inventory WHERE ID = @ID";
+                    SQLiteCommand checkCommand = new SQLiteCommand(checkQuery, connection);
+                    checkCommand.Parameters.AddWithValue("@ID", productId);
+
+                    int recordCount = Convert.ToInt32(checkCommand.ExecuteScalar());
+
+                    if (recordCount > 0)
+                    {
+                        // Если запись существует, обновляем статус
+                        string updateQuery = "UPDATE Inventory SET Status = @Status WHERE ID = @ID";
+                        SQLiteCommand updateCommand = new SQLiteCommand(updateQuery, connection);
+                        updateCommand.Parameters.AddWithValue("@Status", status);
+                        updateCommand.Parameters.AddWithValue("@ID", productId);
+
+                        updateCommand.ExecuteNonQuery();
+                    }
+                    else
+                    {
+                        // Если записи нет, добавляем новую
+                        string insertQuery = @"
+                INSERT INTO Inventory (ResponsibleID, Status, Date) 
+                VALUES (@ID, @Status, DATE('now'));
+            ";
+                        SQLiteCommand insertCommand = new SQLiteCommand(insertQuery, connection);
+                        insertCommand.Parameters.AddWithValue("@ID", productId);
+                        insertCommand.Parameters.AddWithValue("@Status", status);
+                        insertCommand.ExecuteNonQuery();
+                    }
                 }
-                MessageBox.Show("Статус товара успешно изменен!");
+
+                MessageBox.Show("Статус товара успешно изменен/добавлен!");
                 Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка изменения статуса: {ex.Message}");
+                MessageBox.Show($"Ошибка изменения/добавления статуса: {ex.Message}");
             }
         }
     }
